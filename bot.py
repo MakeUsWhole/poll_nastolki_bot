@@ -62,7 +62,7 @@ async def send_weekend_polls(
     friday_date = next_friday.strftime('%d-%m')
     sunday_date = next_sunday.strftime('%d-%m')
 
-    options = ["Буду", "Буду, но позже"]
+    options = ["Буду", "Буду, но позже", "Посмотреть результаты"]
 
     question_friday = f"Настолки {friday_date} (Пятница) в 18:30"
     await bot.send_poll(
