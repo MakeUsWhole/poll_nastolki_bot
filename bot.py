@@ -24,22 +24,20 @@ def build_bot(token: str) -> Bot:
     request = HTTPXRequest(connect_timeout=connect, read_timeout=read)
     return Bot(token=token, request=request)
 
-def get_next_friday_and_sunday():
+def get_next_weekday(target_weekday: int) -> datetime:
     today = datetime.now()
+    days_until = (target_weekday - today.weekday()) % 7
+    if days_until == 0:
+        days_until = 7  # Если сегодня этот день недели, берём следующий
+    return today + timedelta(days=days_until)
 
-    # Находим ближайшую пятницу
-    days_until_friday = (4 - today.weekday()) % 7
-    if days_until_friday == 0:
-        days_until_friday = 7  # Если сегодня пятница, берём следующую
-    next_friday = today + timedelta(days=days_until_friday)
 
-    # Находим ближайшее воскресенье
-    days_until_sunday = (6 - today.weekday()) % 7
-    if days_until_sunday == 0:
-        days_until_sunday = 7  # Если сегодня воскресенье, берём следующее
-    next_sunday = today + timedelta(days=days_until_sunday)
-
-    return next_friday, next_sunday
+def get_next_friday_saturday_sunday() -> Tuple[datetime, datetime, datetime]:
+    return (
+        get_next_weekday(4),  # пятница
+        get_next_weekday(5),  # суббота
+        get_next_weekday(6),  # воскресенье
+    )
 
 
 def resolve_once_target(args: argparse.Namespace) -> Tuple[int, Optional[int]]:
@@ -57,9 +55,10 @@ async def send_weekend_polls(
     message_thread_id: Optional[int] = None,
     reply_to_message_id: Optional[int] = None,
 ) -> None:
-    next_friday, next_sunday = get_next_friday_and_sunday()
+    next_friday, next_saturday, next_sunday = get_next_friday_saturday_sunday()
 
     friday_date = next_friday.strftime('%d-%m')
+    saturday_date = next_saturday.strftime('%d-%m')
     sunday_date = next_sunday.strftime('%d-%m')
 
     options = ["Буду", "Буду, но позже", "Посмотреть результаты"]
@@ -74,7 +73,17 @@ async def send_weekend_polls(
         reply_to_message_id=reply_to_message_id,
     )
 
-    question_sunday = f"Настолки {sunday_date} (Воскресенье) в 14:00"
+    question_saturday = f"Настолки {saturday_date} (Суббота) в 13:00"
+    await bot.send_poll(
+        chat_id=chat_id,
+        message_thread_id=message_thread_id,
+        question=question_saturday,
+        options=options,
+        is_anonymous=False,
+        reply_to_message_id=reply_to_message_id,
+    )
+
+    question_sunday = f"Настолки {sunday_date} (Воскресенье) в 13:00"
     await bot.send_poll(
         chat_id=chat_id,
         message_thread_id=message_thread_id,
